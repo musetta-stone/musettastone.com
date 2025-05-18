@@ -46,6 +46,7 @@
     .msg3 { animation-delay: 6s; }
     .msg4 { animation-delay: 9s; }
     .msg5 { animation-delay: 12s; }
+    .msg6 { animation-delay: 15s; }
 
     @keyframes fadeIn {
       to { opacity: 1; }
@@ -57,7 +58,7 @@
       opacity: 0;
       transform: scale(0);
       animation: explodeIn 1s forwards;
-      animation-delay: 15s;
+      animation-delay: 18s;
     }
 
     @keyframes explodeIn {
@@ -103,14 +104,15 @@
 </head>
 <body>
 
-<canvas id="bgCanvas"></canvas>
+<canvas id="bgCanvas">Background animation</canvas>
 
 <div class="container">
   <div class="message msg1">If you're inspired by Laravel's elegance...</div>
-  <div class="message msg2">And you dream in Dart, Flutter, Blockchain, and<span class="nowrap">AI...</span></div>
+  <div class="message msg2">And you dream in Dart, Flutter, Blockchain, and <span class="nowrap">AI...</span></div>
   <div class="message msg3">Targeting Desktop, Web, Mobile, Cloud, IoT, and Edge...</div>
   <div class="message msg4">Building with eloquence, precision, and dominance!</div>
   <div class="message msg5">Then prepare to meet Vieo (Vee-Oh)...</div>
+  <div class="message msg6">The world's first true Unified Full Stack Platform.</div>
 
   <div class="timer" id="countdown"></div>
 </div>
@@ -256,7 +258,7 @@
     timerEl.style.animation = 'none';
     timerEl.offsetHeight;
     timerEl.style.animation = 'explodeIn 1s forwards';
-    timerEl.style.animationDelay = '15s';
+    timerEl.style.animationDelay = `${messages.length * 3}s`;
   }
 
   function addOneMonth(date) {
@@ -268,13 +270,11 @@
   async function initCountdown() {
     targetDate = await fetchLaunchDate();
 
-    // Initial start after message sequence
     setTimeout(() => {
       updateCountdown();
       window._countdownInterval = setInterval(updateCountdown, 1000);
-    }, 15000); // countdown appears after 15s
+    }, 18000); // updated delay after msg6
 
-    // Sync config every 15 minutes
     setInterval(async () => {
       const newDate = await fetchLaunchDate();
       if (newDate.getTime() !== targetDate.getTime()) {
@@ -283,7 +283,6 @@
       }
     }, 15 * 60 * 1000);
 
-    // Repeat animation sequence every 60 seconds
     setInterval(() => {
       replaySequence();
     }, 60000);
