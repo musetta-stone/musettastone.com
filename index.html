@@ -106,12 +106,11 @@
 <canvas id="bgCanvas"></canvas>
 
 <div class="container">
-  <div class="message msg1">If you're inspired by Laravel’s elegance...</div>
-<div class="message msg2">And you dream in Dart, Flutter, Blockchain, and <span class="nowrap">AI...</span></div>
-<div class="message msg3">Targeting Desktop, Web, Mobile, Cloud, IoT, and Edge...</div>
-<div class="message msg4">Building with eloquence, precision, and dominance!</div>
-<div class="message msg5">Then prepare to meet Vieo (Vee-Oh)...</div>
-
+  <div class="message msg1">If you're inspired by Laravel's elegance...</div>
+  <div class="message msg2">And you dream in Dart, Flutter, Blockchain, and<span class="nowrap">AI...</span></div>
+  <div class="message msg3">Targeting Desktop, Web, Mobile, Cloud, IoT, and Edge...</div>
+  <div class="message msg4">Building with eloquence, precision, and dominance!</div>
+  <div class="message msg5">Then prepare to meet Vieo (Vee-Oh)...</div>
 
   <div class="timer" id="countdown"></div>
 </div>
@@ -235,7 +234,6 @@
     if (distance <= 0) {
       el.innerHTML = updateCountdownDisplay(0);
       clearInterval(window._countdownInterval);
-      setTimeout(replaySequence, 3000);
     } else {
       el.innerHTML = updateCountdownDisplay(distance);
     }
@@ -259,11 +257,6 @@
     timerEl.offsetHeight;
     timerEl.style.animation = 'explodeIn 1s forwards';
     timerEl.style.animationDelay = '15s';
-
-    setTimeout(() => {
-      updateCountdown();
-      window._countdownInterval = setInterval(updateCountdown, 1000);
-    }, 15000);
   }
 
   function addOneMonth(date) {
@@ -275,11 +268,13 @@
   async function initCountdown() {
     targetDate = await fetchLaunchDate();
 
+    // Initial start after message sequence
     setTimeout(() => {
       updateCountdown();
       window._countdownInterval = setInterval(updateCountdown, 1000);
-    }, 15000);
+    }, 15000); // countdown appears after 15s
 
+    // Sync config every 15 minutes
     setInterval(async () => {
       const newDate = await fetchLaunchDate();
       if (newDate.getTime() !== targetDate.getTime()) {
@@ -287,6 +282,11 @@
         updateCountdown();
       }
     }, 15 * 60 * 1000);
+
+    // Repeat animation sequence every 60 seconds
+    setInterval(() => {
+      replaySequence();
+    }, 60000);
   }
 
   window.onload = initCountdown;
