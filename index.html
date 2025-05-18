@@ -32,24 +32,16 @@
       text-align: center;
       max-width: 1000px;
       width: 100%;
+      /* For fade in/out */
+      opacity: 1;
+      transition: opacity 2s ease;
     }
 
     .message {
       opacity: 0;
       font-size: 2rem;
       margin: 20px 0;
-      animation: fadeIn 2s forwards;
-    }
-
-    .msg1 { animation-delay: 0s; }
-    .msg2 { animation-delay: 3s; }
-    .msg3 { animation-delay: 6s; }
-    .msg4 { animation-delay: 9s; }
-    .msg5 { animation-delay: 12s; }
-    .msg6 { animation-delay: 15s; }
-
-    @keyframes fadeIn {
-      to { opacity: 1; }
+      /* Remove CSS animations since we'll control via JS */
     }
 
     .timer {
@@ -57,19 +49,8 @@
       margin-top: 40px;
       opacity: 0;
       transform: scale(0);
-      animation: explodeIn 1s forwards;
-      animation-delay: 18s;
-    }
-
-    @keyframes explodeIn {
-      0% {
-        opacity: 0;
-        transform: scale(0.1);
-      }
-      100% {
-        opacity: 1;
-        transform: scale(1.2);
-      }
+      transition: opacity 1s ease, transform 1s ease;
+      will-change: opacity, transform;
     }
 
     .time-part {
@@ -100,21 +81,52 @@
         font-size: 2rem;
       }
     }
+
+    /* Logo overlay styling */
+    #logoOverlay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 300px;
+      height: 300px;
+      background: transparent;
+      /* Example logo styling */
+    }
+
+    #logoOverlay img {
+      max-width: 100%;
+      max-height: 100%;
+      user-select: none;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
 
-<canvas id="bgCanvas">Background animation</canvas>
+<canvas id="bgCanvas" aria-hidden="true">Background animation</canvas>
 
-<div class="container">
-  <div class="message msg1">If you're inspired by Laravel's elegance...</div>
-  <div class="message msg2">And you dream in Dart, Flutter, Blockchain, and <span class="nowrap">AI...</span></div>
-  <div class="message msg3">Targeting Desktop, Web, Mobile, Cloud, IoT, and Edge...</div>
-  <div class="message msg4">Building with eloquence, precision, and dominance!</div>
-  <div class="message msg5">Then prepare to meet Vieo (Vee-Oh)...</div>
-  <div class="message msg6">The world's first true Unified Full Stack Platform.</div>
+<div class="container" role="main" aria-live="polite" aria-atomic="true">
+  <div class="message" id="msg1">If you're inspired by Laravel's elegance...</div>
+  <div class="message" id="msg2">And you dream in Dart, Flutter, Blockchain, and <span class="nowrap">AI...</span></div>
+  <div class="message" id="msg3">Targeting Desktop, Web, Mobile, Cloud, IoT, and Edge...</div>
+  <div class="message" id="msg4">Building with eloquence, precision, and dominance!</div>
+  <div class="message" id="msg5">Then prepare to meet Vieo (Vee-Oh)...</div>
+  <div class="message" id="msg6">The world's first true Unified Full Stack Platform.</div>
 
-  <div class="timer" id="countdown"></div>
+  <div class="timer" id="countdown" aria-live="off" aria-label="Launch countdown timer"></div>
+</div>
+
+<div id="logoOverlay" aria-hidden="true" role="img" aria-label="Vieo logo reveal">
+  <!-- Replace this with your actual logo SVG or image -->
+  <img src="logo.png" alt="Vieo Logo" />
 </div>
 
 <script>
@@ -184,6 +196,7 @@
   drawParticles();
 
   // ==== Countdown Logic ====
+
   async function fetchLaunchDate() {
     try {
       const response = await fetch(CONFIG_URL, { cache: "no-store" });
@@ -241,40 +254,132 @@
     }
   }
 
-  function replaySequence() {
-    const messages = document.querySelectorAll('.message');
-    const timerEl = document.getElementById('countdown');
-
-    messages.forEach((msg, i) => {
-      msg.style.opacity = '0';
-      msg.style.animation = 'none';
-      msg.offsetHeight;
-      msg.style.animation = `fadeIn 2s forwards`;
-      msg.style.animationDelay = `${i * 3}s`;
-    });
-
-    timerEl.style.opacity = '0';
-    timerEl.style.transform = 'scale(0)';
-    timerEl.style.animation = 'none';
-    timerEl.offsetHeight;
-    timerEl.style.animation = 'explodeIn 1s forwards';
-    timerEl.style.animationDelay = `${messages.length * 3}s`;
-  }
-
+  // Add one month fallback helper
   function addOneMonth(date) {
     const result = new Date(date);
     result.setMonth(result.getMonth() + 1);
     return result;
   }
 
+  // === New: Full sequence control ===
+
+  // DOM references
+  const messages = Array.from(document.querySelectorAll('.message'));
+  const timerEl = document.getElementById('countdown');
+  const container = document.querySelector('.container');
+  const logoOverlay = document.getElementById('logoOverlay');
+
+  // Timing constants in ms
+  const MESSAGE_FADE_IN_DURATION = 3000; // each message fade-in time
+  const MESSAGE_TOTAL_TIME = MESSAGE_FADE_IN_DURATION * messages.length; // 18,000ms
+  const TIMER_VISIBLE_DURATION = 30000; // 30s countdown visible
+  const CONTAINER_FADE_OUT_DURATION = 2000; // 2s fade out
+  const LOGO_VISIBLE_DURATION = 30000; // 30s logo visible
+
+  // Helper: fade in message with opacity transition (controlled via JS)
+  function fadeInMessage(msg, delay) {
+    setTimeout(() => {
+      msg.style.transition = 'opacity 2.5s ease';
+      msg.style.opacity = '1';
+    }, delay);
+  }
+
+  // Helper: fade out message with opacity transition
+  function fadeOutMessages() {
+    messages.forEach(msg => {
+      msg.style.transition = 'opacity 2s ease';
+      msg.style.opacity = '0';
+    });
+  }
+
+  // Fade in timer with scale and opacity
+  function fadeInTimer() {
+    timerEl.style.transition = 'opacity 1s ease, transform 1s ease';
+    timerEl.style.opacity = '1';
+    timerEl.style.transform = 'scale(1.2)';
+  }
+
+  // Fade out timer
+  function fadeOutTimer() {
+    timerEl.style.transition = 'opacity 1.5s ease, transform 1.5s ease';
+    timerEl.style.opacity = '0';
+    timerEl.style.transform = 'scale(0)';
+  }
+
+  // Fade out entire container (messages + timer)
+  function fadeOutContainer() {
+    container.style.opacity = '0';
+  }
+
+  // Fade in entire container
+  function fadeInContainer() {
+    container.style.opacity = '1';
+  }
+
+  // Fade in logo overlay
+  function fadeInLogo() {
+    logoOverlay.style.pointerEvents = 'auto';
+    logoOverlay.style.opacity = '1';
+  }
+
+  // Fade out logo overlay
+  function fadeOutLogo() {
+    logoOverlay.style.pointerEvents = 'none';
+    logoOverlay.style.opacity = '0';
+  }
+
+  async function runSequence() {
+    // Reset states
+    container.style.opacity = '1';
+    messages.forEach(msg => {
+      msg.style.opacity = '0';
+      msg.style.transition = 'none';
+    });
+    timerEl.style.opacity = '0';
+    timerEl.style.transform = 'scale(0)';
+    timerEl.style.transition = 'none';
+    fadeOutLogo(); // hide logo immediately if visible
+
+    // 1) Fade in messages sequentially (3s each)
+    messages.forEach((msg, i) => {
+      fadeInMessage(msg, i * MESSAGE_FADE_IN_DURATION);
+    });
+
+    // 2) After all messages faded in (18s), fade in timer & start countdown updates
+    setTimeout(() => {
+      fadeInTimer();
+      updateCountdown(); // immediate update to show correct time
+      window._countdownInterval = setInterval(updateCountdown, 1000);
+    }, MESSAGE_TOTAL_TIME);
+
+    // 3) After timer visible for 30s (48s from start), fade out container & timer
+    setTimeout(() => {
+      clearInterval(window._countdownInterval);
+      fadeOutTimer();
+      fadeOutMessages();
+      fadeOutContainer();
+    }, MESSAGE_TOTAL_TIME + TIMER_VISIBLE_DURATION);
+
+    // 4) After container fade out (2s), show logo overlay for 30s
+    setTimeout(() => {
+      fadeInLogo();
+    }, MESSAGE_TOTAL_TIME + TIMER_VISIBLE_DURATION + CONTAINER_FADE_OUT_DURATION);
+
+    // 5) After logo visible for 30s, fade out logo and restart sequence
+    setTimeout(() => {
+      fadeOutLogo();
+    }, MESSAGE_TOTAL_TIME + TIMER_VISIBLE_DURATION + CONTAINER_FADE_OUT_DURATION + LOGO_VISIBLE_DURATION);
+
+    // 6) Restart the full sequence after total cycle duration
+    setTimeout(() => {
+      runSequence();
+    }, MESSAGE_TOTAL_TIME + TIMER_VISIBLE_DURATION + CONTAINER_FADE_OUT_DURATION + LOGO_VISIBLE_DURATION + CONTAINER_FADE_OUT_DURATION);
+  }
+
   async function initCountdown() {
     targetDate = await fetchLaunchDate();
 
-    setTimeout(() => {
-      updateCountdown();
-      window._countdownInterval = setInterval(updateCountdown, 1000);
-    }, 18000); // updated delay after msg6
-
+    // Check every 15 min for launchDate changes (your original logic)
     setInterval(async () => {
       const newDate = await fetchLaunchDate();
       if (newDate.getTime() !== targetDate.getTime()) {
@@ -283,9 +388,7 @@
       }
     }, 15 * 60 * 1000);
 
-    setInterval(() => {
-      replaySequence();
-    }, 60000);
+    runSequence();
   }
 
   window.onload = initCountdown;
